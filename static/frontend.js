@@ -137,13 +137,13 @@ function togglePlayer() {
 function renderIndicator() {
   const indicatorSize = Math.min(window.innerWidth, window.innerHeight) * 0.15; // Cube size relative to screen
   renderer.setViewport(
-    220, // X position (padding from left)
+    10, // X position (padding from left)
     window.innerHeight - indicatorSize - 7, // Y position (padding from top)
     indicatorSize, // Width
     indicatorSize // Height
   );
   renderer.setScissor(
-    220, // Match the viewport
+    10, // Match the viewport
     window.innerHeight - indicatorSize - 7,
     indicatorSize,
     indicatorSize
