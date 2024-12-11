@@ -107,7 +107,7 @@ animate();
 
 // Communicate with backend
 async function sendMoveToBackend(x, y, z) {
-  const response = await fetch('http://localhost:5000/move', {
+  const response = await fetch('/move', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ function resetGame() {
     cells[key].mesh.material = originalMaterial;
   }
   // Make a request to reset the backend state
-  fetch('http://localhost:5000/reset', { // Update URL based on your backend
+  fetch('/reset', { // Update URL based on your backend
     method: 'POST', // Using POST for reset action
     headers: {
       'Content-Type': 'application/json'
