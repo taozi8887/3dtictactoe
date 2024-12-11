@@ -6,7 +6,7 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
-size = 4
+size = 5
 
 # Game state: 3D Tic Tac Toe grid (3x3x3), None for empty cells
 grid = [[[None for _ in range(size)] for _ in range(size)] for _ in range(size)]

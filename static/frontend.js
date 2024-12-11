@@ -35,8 +35,8 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 3); // Brighter ambient li
 scene.add(ambientLight);
 
 // Create the grid for 3D Tic Tac Toe
-const gridSize = 4;
-const cellSize = 4;
+const gridSize = 5;
+const cellSize = 5;
 const gridGroup = new THREE.Group();
 const cells = {}; // Store grid cells for state tracking
 
@@ -81,7 +81,7 @@ ground.position.y = -0.5;
 ground.receiveShadow = true;
 
 // Camera setup
-camera.position.set(10,10,10);
+camera.position.set(15,15,15);
 controls.update();
 
 // Create a flat plane for the ground
