@@ -6,9 +6,11 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
+size = 4
+
 # Game state: 3D Tic Tac Toe grid (3x3x3), None for empty cells
-grid = [[[None for _ in range(3)] for _ in range(3)] for _ in range(3)]
-current_player = "X"
+grid = [[[None for _ in range(size)] for _ in range(size)] for _ in range(size)]
+current_player = "X"    
 
 def check_winner():
     # Directions for all 26 possible moves (faces, edges, corners)
@@ -27,30 +29,30 @@ def check_winner():
         (1, -1, -1), (-1, -1, -1), # Bottom-back
     ]
     
-    for z in range(3):
-        for y in range(3):
-            for x in range(3):
+    for z in range(size):
+        for y in range(size):
+            for x in range(size):
                 if grid[z][y][x] is not None: 
                     current_value = grid[z][y][x]
                     
                     for dx, dy, dz in directions:
                         count = 1
                         
-                        for i in range(1, 3):
+                        for i in range(1, size):
                             nx, ny, nz = x + dx * i, y + dy * i, z + dz * i
-                            if 0 <= nx < 3 and 0 <= ny < 3 and 0 <= nz < 3 and grid[nz][ny][nx] == current_value:
+                            if 0 <= nx < size and 0 <= ny < size and 0 <= nz < size and grid[nz][ny][nx] == current_value:
                                 count += 1
                             else:
                                 break
                         
-                        for i in range(1, 3):
+                        for i in range(1, size):
                             nx, ny, nz = x - dx * i, y - dy * i, z - dz * i
-                            if 0 <= nx < 3 and 0 <= ny < 3 and 0 <= nz < 3 and grid[nz][ny][nx] == current_value:
+                            if 0 <= nx < size and 0 <= ny < size and 0 <= nz < size and grid[nz][ny][nx] == current_value:
                                 count += 1
                             else:
                                 break
                         
-                        if count == 3:
+                        if count == size:
                             return current_value
 
     return None
@@ -88,7 +90,7 @@ def make_move():
 @app.route('/reset', methods=['POST'])
 def reset_game():
     global grid, current_player
-    grid = [[[None for _ in range(3)] for _ in range(3)] for _ in range(3)]  # Reset grid
+    grid = [[[None for _ in range(size)] for _ in range(size)] for _ in range(size)]  # Reset grid
     current_player = "X"  # Reset starting player
     return jsonify(success=True, message="Game reset successfully")
 

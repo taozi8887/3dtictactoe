@@ -4,7 +4,7 @@ import { OrbitControls } from 'OrbitControls';
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffdcd9);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true; // Enable shadows
 document.body.appendChild(renderer.domElement);
@@ -35,8 +35,8 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 3); // Brighter ambient li
 scene.add(ambientLight);
 
 // Create the grid for 3D Tic Tac Toe
-const gridSize = 3;
-const cellSize = 3;
+const gridSize = 4;
+const cellSize = 4;
 const gridGroup = new THREE.Group();
 const cells = {}; // Store grid cells for state tracking
 
@@ -81,7 +81,7 @@ ground.position.y = -0.5;
 ground.receiveShadow = true;
 
 // Camera setup
-camera.position.set(8, 8, 8);
+camera.position.set(10,10,10);
 controls.update();
 
 // Create a flat plane for the ground
@@ -96,11 +96,78 @@ plane.rotation.x = -Math.PI / 2; // Rotate the plane to be flat (horizontal)
 plane.position.y = -100; // Position it slightly below the cubes so it is visible as the ground
 scene.add(plane);
 
+// Add player indicator scene
+const indicatorScene = new THREE.Scene();
+indicatorScene.background = null;
+const indicatorCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+indicatorCamera.position.z = 2;
+
+// Create the rotating cube for the player indicator
+const indicatorGeometry = new THREE.BoxGeometry(1, 1, 1);
+let indicatorMaterial = new THREE.MeshStandardMaterial({ 
+  color: 0xff9696, // Start with red for player X
+  metalness: 0.5,
+  roughness: 0.2
+});
+const indicatorCube = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+indicatorScene.add(indicatorCube);
+
+const light2 = new THREE.DirectionalLight(0xffdc14, 4); // Reduce light intensity to avoid overexposure
+light2.position.set(5, 10, 5);
+light2.castShadow = true; // Enable shadow casting
+indicatorScene.add(light2);
+
+// Lighting for the indicator scene
+const indicatorLight = new THREE.AmbientLight(0xffffff, 5);
+indicatorScene.add(indicatorLight);
+
+// Function to update the indicator's color based on the current player
+function updateIndicatorColor(player) {
+  indicatorMaterial.color.set(player === 'X' ? 0xff9696 : 0xa8cfff); // Red for X, Blue for O
+}
+
+// Add player turn tracking
+let currentPlayer = 'X'; // Start with player X
+
+function togglePlayer() {
+  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+  updateIndicatorColor(currentPlayer);
+}
+
+function renderIndicator() {
+  const indicatorSize = Math.min(window.innerWidth, window.innerHeight) * 0.15; // Cube size relative to screen
+  renderer.setViewport(
+    220, // X position (padding from left)
+    window.innerHeight - indicatorSize - 7, // Y position (padding from top)
+    indicatorSize, // Width
+    indicatorSize // Height
+  );
+  renderer.setScissor(
+    220, // Match the viewport
+    window.innerHeight - indicatorSize - 7,
+    indicatorSize,
+    indicatorSize
+  );
+  renderer.setScissorTest(true); // Enable scissor test to prevent rendering outside the viewport
+  renderer.render(indicatorScene, indicatorCamera);
+  renderer.setScissorTest(false); // Disable scissor test after rendering the indicator
+}
+
 // Render loop
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  // Rotate the indicator cube
+  indicatorCube.rotation.x += 0.01;
+  indicatorCube.rotation.y += 0.01;
+
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight); // Reset viewport
+  renderer.setScissor(0, 0, window.innerWidth, window.innerHeight); // Reset scissor area
+  renderer.setScissorTest(false); // Ensure scissor test is disabled for main rendering
   renderer.render(scene, camera);
+
+  // Render the indicator cube
+  renderIndicator();
 }
 animate();
 
@@ -119,9 +186,12 @@ async function sendMoveToBackend(x, y, z) {
     if (result.winner) {
       console.log(`Player ${result.winner} wins!`);
       updateCell(x, y, z, result.winner);
+      document.getElementById('win').innerText = result.winner;
+      document.getElementsByClassName('overlay')[0].style.visibility = 'visible';
       
     } else {
       updateCell(x, y, z, result.player);
+      togglePlayer();
     }
   } else {
     

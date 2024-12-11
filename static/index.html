@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D Tic Tac Toe</title>
+  <link rel="stylesheet" href="/static/style.css">
   <script type="importmap">
     {
         "imports": {
@@ -14,6 +15,14 @@
 </script>
 </head>
 <body>
+  <div class="overlay">
+    <div class="endscreen">
+      <h1>Player <span id="win"></span> wins!</h1>
+      <a href="" class="playagain">Play Again</a>
+    </div>
+  </div>
+  <div class="ui_current_player">
+    Current Player:</div>
   <script type="module" src="/static/frontend.js"></script>
 </body>
 </html>
