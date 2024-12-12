@@ -2,6 +2,7 @@ body {
     font-family: 'Courier New', monospace;
     background: #ffdcd9;
     user-select: none;
+    cursor: grab;
 }
 
 .ui_current_player {

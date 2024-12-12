@@ -24,6 +24,9 @@ controls.zoomSpeed = .9;
 document.body.style.margin = '0';
 document.body.style.overflow = 'hidden';
 
+var pop = new Audio("/static/pop.mp3");
+pop.volume = .5
+
 // Lighting setup
 const light = new THREE.DirectionalLight(0xffdc14, 4); // Reduce light intensity to avoid overexposure
 light.position.set(5, 10, 5);
@@ -34,12 +37,13 @@ scene.add(light);
 const ambientLight = new THREE.AmbientLight(0xffffff, 3); // Brighter ambient light to fill in shadows
 scene.add(ambientLight);
 
-// Create the grid for 3D Tic Tac Toe
 const gridSize = 5;
 const cellSize = 5;
 const gridGroup = new THREE.Group();
 const cells = {}; // Store grid cells for state tracking
-
+const growthDuration = 0.07; // Faster growth duration
+const overshootScale = 1.2; // Scale to overshoot during the animation
+const cubesToAnimate = []; // List of cubes to animate
 
 // Find the center of the grid and adjust grid positioning
 const centerX = Math.floor(gridSize / 2);
@@ -52,18 +56,27 @@ for (let x = 0; x < gridSize; x++) {
     for (let z = 0; z < gridSize; z++) {
       const geometry = new THREE.BoxGeometry(1.3, 1.3, 1.3);
       const material = new THREE.MeshStandardMaterial({
-        color: 0xffcd59, 
-        metalness: 0.1, 
+        color: 0xffcd59,
+        metalness: 0.1,
         roughness: 0,
       });
       const cube = new THREE.Mesh(geometry, material);
+
       cube.position.set(
         (x - centerX) * cellSize, // Center the grid along the X axis
         (y - centerY) * cellSize, // Center the grid along the Y axis
         (z - centerZ) * cellSize  // Center the grid along the Z axis
       );
-      cube.castShadow = true; 
+      cube.castShadow = true;
       cube.receiveShadow = true;
+
+      // Set initial scale to 0 (invisible)
+      cube.scale.set(0, 0, 0);
+
+      // Store cube and its start time for animation
+      const startTime = (x + y + z) * 0.1; // Stagger animation based on grid position
+      cubesToAnimate.push({ cube, startTime });
+
       gridGroup.add(cube);
 
       cells[`${x}-${y}-${z}`] = { mesh: cube, state: null }; // Track cell state
@@ -153,9 +166,35 @@ function renderIndicator() {
   renderer.setScissorTest(false); // Disable scissor test after rendering the indicator
 }
 
+// Animate the cubes
+const clock = new THREE.Clock(); // Track time for animations
+
+// Add ease-out cubic function to THREE.MathUtils
+THREE.MathUtils.easeOutCubic = function (t) {
+  return 1 - Math.pow(1 - t, 3);
+};
+
 // Render loop
 function animate() {
   requestAnimationFrame(animate);
+
+  const elapsedTime = clock.getElapsedTime();
+
+  // Animate cube scaling
+  cubesToAnimate.forEach(({ cube, startTime }) => {
+    const progress = (elapsedTime - startTime) / growthDuration;
+    if (progress >= 0 && progress <= 1) {
+      // Ease-out effect with slight overshoot
+      const easedProgress = THREE.MathUtils.easeOutCubic(progress);
+      const scale = easedProgress < 1
+        ? THREE.MathUtils.lerp(0, overshootScale, easedProgress) // Overshoot
+        : 1; // Final scale
+      cube.scale.set(scale, scale, scale);
+    } else if (progress > 1 && cube.scale.x !== 1) {
+      cube.scale.set(1, 1, 1); // Clamp to final size
+    }
+  });
+
   controls.update();
   // Rotate the indicator cube
   indicatorCube.rotation.x += 0.01;
@@ -198,6 +237,38 @@ async function sendMoveToBackend(x, y, z) {
   }
 }
 
+
+function popCube(cube, minScale, maxScale) {
+  let currentScale = 1; // Start with the original scale
+  const step = 0.1; // Scale increment per frame
+  const interval = 10; // Time between frames (ms)
+
+  // Scale up
+  pop.pause(); // Perhaps optional
+  pop.currentTime = 0;
+  pop.play();
+  const growInterval = setInterval(() => {
+    if (currentScale < maxScale) {
+      const scaleStep = step / currentScale; // Adjust step size based on current scale
+      cube.geometry.scale(1 + scaleStep, 1 + scaleStep, 1 + scaleStep);
+      currentScale += step;
+    } else {
+      clearInterval(growInterval);
+
+      // Scale down to 1.2
+      const shrinkInterval = setInterval(() => {
+        if (currentScale > minScale) {
+          const scaleStep = step / currentScale;
+          cube.geometry.scale(1 - scaleStep, 1 - scaleStep, 1 - scaleStep);
+          currentScale -= step;
+        } else {
+          clearInterval(shrinkInterval);
+        }
+      }, interval);
+    }
+  }, interval);
+}
+
 // Update the grid cell with the player's move
 function updateCell(x, y, z, player) {
   const cellKey = `${x}-${y}-${z}`;
@@ -205,11 +276,21 @@ function updateCell(x, y, z, player) {
     cells[cellKey].state = player;
     const material = new THREE.MeshStandardMaterial({ color: player === 'X' ? 0xff9696 : 0xa8cfff, metalness: 0.1, roughness: 0 });
     cells[cellKey].mesh.material = material;
+    popCube(cells[cellKey].mesh, 1.4, 1.6);
+    popCube(indicatorCube, 1, 1.3);
   }
 }
 
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+function testScaleChange(cube) {
+  cube.scale.set(1.5, 1.5, 1.5); // Scale up
+  setTimeout(() => cube.scale.set(1, 1, 1), 500); // Reset scale after 500ms
+}
+
 // Detect clicks on the grid
-renderer.domElement.addEventListener('click', (event) => {
+renderer.domElement.addEventListener('mousedown', (event) => {
+  if (event.button == 2) {
   const mouse = new THREE.Vector2(
     (event.clientX / window.innerWidth) * 2 - 1,
     -(event.clientY / window.innerHeight) * 2 + 1
@@ -228,7 +309,7 @@ renderer.domElement.addEventListener('click', (event) => {
 
     sendMoveToBackend(x, y, z);
   }
-});
+}});
 
 // Reset the game
 function resetGame() {
