@@ -174,11 +174,68 @@ THREE.MathUtils.easeOutCubic = function (t) {
   return 1 - Math.pow(1 - t, 3);
 };
 
+let winningLine = {
+  active: false,
+  line: null,
+  start: null,
+  end: null,
+  startTime: null,
+};
+
+function drawWinningLine(start, end) {
+  const adjustedStart = new THREE.Vector3(
+    (start.z - centerX) * cellSize,
+    (start.y - centerY) * cellSize,
+    (start.x - centerZ) * cellSize
+  );
+
+  const adjustedEnd = new THREE.Vector3(
+    (end.z - centerX) * cellSize,
+    (end.y - centerY) * cellSize,
+    (end.x - centerZ) * cellSize
+  );
+
+  // Create geometry for the line
+  const path = new THREE.CurvePath();
+  path.add(new THREE.LineCurve3(adjustedStart, adjustedEnd));
+
+  const geometry = new THREE.TubeGeometry(path, 20, 0.1, 8, false); // Adjust the radius (0.1) for thickness
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x52ff52, // Red color for the winning line
+    side: THREE.DoubleSide,
+  });
+
+  const line = new THREE.Mesh(geometry, material);
+  scene.add(line);
+
+  winningLine = {
+    active: true,
+    line,
+    start: adjustedStart,
+    end: adjustedEnd,
+    startTime: clock.getElapsedTime(),
+  };
+}
+
 // Render loop
 function animate() {
   requestAnimationFrame(animate);
 
   const elapsedTime = clock.getElapsedTime();
+
+  if (winningLine.active) {
+    const progress = (elapsedTime - winningLine.startTime) / 5.0; // 1 second duration
+    if (progress < 1) {
+      // Interpolate the end point of the line over time
+      const interpolatedEnd = winningLine.start.clone().lerp(winningLine.end, progress);
+      winningLine.line.geometry.setFromPoints([winningLine.start, interpolatedEnd]);
+    } else {
+      // Complete the line animation
+      winningLine.line.geometry.setFromPoints([winningLine.start, winningLine.end]);
+      winningLine.active = false; // End the animation
+    }
+  }
+
 
   // Animate cube scaling
   cubesToAnimate.forEach(({ cube, startTime }) => {
@@ -224,9 +281,20 @@ async function sendMoveToBackend(x, y, z) {
   if (result.success) {
     if (result.winner) {
       console.log(`Player ${result.winner} wins!`);
+
+
+      console.log(result)
+
+      // Draw the winning line (replace with actual coordinates from backend)
+      const start = { x: result.start.x, y: result.start.y, z: result.start.z };
+      const end = { x: result.end.x, y: result.end.y, z: result.end.z };
+      drawWinningLine(start, end);
+
       updateCell(x, y, z, result.winner);
       document.getElementById('win').innerText = result.winner;
       document.getElementsByClassName('overlay')[0].style.visibility = 'visible';
+
+  
       
     } else {
       updateCell(x, y, z, result.player);
