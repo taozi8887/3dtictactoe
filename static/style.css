@@ -42,17 +42,29 @@ body {
     margin-bottom: 50px;
 }
 
-.playagain {
+.red {
     background: #ffdcd9;
+    border: 2px solid #ff8a80;
+}
+
+.red:hover {
+    background: #ff8a80;
+}
+
+.blue {
+    background: #a8cfff;
+    border: 2px solid #57a3ff;
+}
+
+.blue:hover {
+    background: #57a3ff;
+}
+
+.playagain {
     text-decoration: none;
     border-radius: 5px;
     color: black;
     font-size: 20px;
     padding: 10px 25px;
     transition: all 0.3s ease;
-    border: 2px solid #ff8a80;
-}
-
-.playagain:hover {
-    background: #ff8a80;
 }

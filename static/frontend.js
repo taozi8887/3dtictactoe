@@ -8,6 +8,7 @@ const renderer = new THREE.WebGLRenderer({ alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true; // Enable shadows
 document.body.appendChild(renderer.domElement);
+var won = false;
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -182,7 +183,8 @@ let winningLine = {
   startTime: null,
 };
 
-function drawWinningLine(start, end) {
+// Draw the winning line with animation setup
+function drawWinningLine(start, end, winner) {
   const adjustedStart = new THREE.Vector3(
     (start.z - centerX) * cellSize,
     (start.y - centerY) * cellSize,
@@ -199,9 +201,9 @@ function drawWinningLine(start, end) {
   const path = new THREE.CurvePath();
   path.add(new THREE.LineCurve3(adjustedStart, adjustedEnd));
 
-  const geometry = new THREE.TubeGeometry(path, 20, 0.1, 8, false); // Adjust the radius (0.1) for thickness
+  const geometry = new THREE.TubeGeometry(path, 20, 0.3, 8, false); // Adjust the radius (0.1) for thickness
   const material = new THREE.MeshBasicMaterial({
-    color: 0x52ff52, // Red color for the winning line
+    color: 0xffffff,//winner === 'X' ? 0xff9696 : 0xa8cfff, // Green color for the winning line
     side: THREE.DoubleSide,
   });
 
@@ -223,19 +225,28 @@ function animate() {
 
   const elapsedTime = clock.getElapsedTime();
 
-  if (winningLine.active) {
-    const progress = (elapsedTime - winningLine.startTime) / 5.0; // 1 second duration
+  // Animate the winning line
+  if (winningLine?.active) {
+    const progress = (elapsedTime - winningLine.startTime) / 2.0; // 5-second duration
     if (progress < 1) {
       // Interpolate the end point of the line over time
       const interpolatedEnd = winningLine.start.clone().lerp(winningLine.end, progress);
-      winningLine.line.geometry.setFromPoints([winningLine.start, interpolatedEnd]);
+      const path = new THREE.CurvePath();
+      path.add(new THREE.LineCurve3(winningLine.start, interpolatedEnd));
+
+      // Update geometry with new path
+      const updatedGeometry = new THREE.TubeGeometry(path, 20, 0.3, 8, false);
+      winningLine.line.geometry.dispose(); // Dispose of the old geometry to free memory
+      winningLine.line.geometry = updatedGeometry;
     } else {
       // Complete the line animation
-      winningLine.line.geometry.setFromPoints([winningLine.start, winningLine.end]);
+      winningLine.line.geometry.dispose();
+      const finalPath = new THREE.CurvePath();
+      finalPath.add(new THREE.LineCurve3(winningLine.start, winningLine.end));
+      winningLine.line.geometry = new THREE.TubeGeometry(finalPath, 20, 0.3, 8, false);
       winningLine.active = false; // End the animation
     }
   }
-
 
   // Animate cube scaling
   cubesToAnimate.forEach(({ cube, startTime }) => {
@@ -253,10 +264,12 @@ function animate() {
   });
 
   controls.update();
+
   // Rotate the indicator cube
   indicatorCube.rotation.x += 0.01;
   indicatorCube.rotation.y += 0.01;
 
+  // Main rendering
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight); // Reset viewport
   renderer.setScissor(0, 0, window.innerWidth, window.innerHeight); // Reset scissor area
   renderer.setScissorTest(false); // Ensure scissor test is disabled for main rendering
@@ -265,43 +278,55 @@ function animate() {
   // Render the indicator cube
   renderIndicator();
 }
+
 animate();
+
 
 
 // Communicate with backend
 async function sendMoveToBackend(x, y, z) {
-  const response = await fetch('/move', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ x, y, z }),
-  });
-  const result = await response.json();
-  if (result.success) {
-    if (result.winner) {
-      console.log(`Player ${result.winner} wins!`);
-
-
-      console.log(result)
-
-      // Draw the winning line (replace with actual coordinates from backend)
-      const start = { x: result.start.x, y: result.start.y, z: result.start.z };
-      const end = { x: result.end.x, y: result.end.y, z: result.end.z };
-      drawWinningLine(start, end);
-
-      updateCell(x, y, z, result.winner);
-      document.getElementById('win').innerText = result.winner;
-      document.getElementsByClassName('overlay')[0].style.visibility = 'visible';
-
+  if (!won) {
+    const response = await fetch('/move', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ x, y, z }),
+    });
+    const result = await response.json();
+    if (result.success) {
+      if (result.winner) {
+        console.log(`Player ${result.winner} wins!`);
   
-      
-    } else {
-      updateCell(x, y, z, result.player);
-      togglePlayer();
-    }
-  } else {
+  
+        console.log(result)
+  
+        // Draw the winning line (replace with actual coordinates from backend)
+        const start = { x: result.start.x, y: result.start.y, z: result.start.z };
+        const end = { x: result.end.x, y: result.end.y, z: result.end.z };
+        drawWinningLine(start, end, result.winner);
+  
+  
+  
+        updateCell(x, y, z, result.winner);
+          // Delay showing the win screen
+        setTimeout(() => {
+          document.getElementById('win').innerText = result.winner;
+          document.getElementsByClassName('overlay')[0].style.visibility = 'visible';
+          document.getElementById('pabtn').classList.add(result.winner === "X" ? 'red' : 'blue')
+          document.getElementById('winimg').src = result.winner === "X" ? '/static/redwin.png' : '/static/bluewin.png'
+          document.getElementById('winimg2').src = result.winner === "X" ? '/static/redwin2.png' : '/static/bluewin2.png'
+        }, 3000); // Delay in milliseconds (2000ms = 2 seconds)
+  
     
+        
+      } else {
+        updateCell(x, y, z, result.player);
+        togglePlayer();
+      }
+    } else {
+      
+    }
   }
 }
 
