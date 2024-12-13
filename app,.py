@@ -11,6 +11,7 @@ size = 5
 # Game state: 3D Tic Tac Toe grid (5x5x5), None for empty cells
 grid = [[[None for _ in range(size)] for _ in range(size)] for _ in range(size)]
 current_player = "X"
+won = False
 
 def check_winner():
     # Directions for all 26 possible moves (faces, edges, corners)
@@ -70,40 +71,44 @@ def index():
 
 @app.route('/move', methods=['POST'])
 def make_move():
-    global current_player
-    data = request.get_json()
-    x, y, z = int(data['x']), int(data['y']), int(data['z'])
+    global current_player, won
+    if not won:
+        data = request.get_json()
+        x, y, z = int(data['x']), int(data['y']), int(data['z'])
 
-    # Validate move
-    if grid[x][y][z] is not None:
-        return jsonify(success=False, message="Cell already occupied!")
+        # Validate move
+        if grid[x][y][z] is not None:
+            return jsonify(success=False, message="Cell already occupied!")
 
-    # Place the move
-    grid[x][y][z] = current_player
+        # Place the move
+        grid[x][y][z] = current_player
 
-    # Check for winner
-    winner, start, end = check_winner()
+        # Check for winner
+        winner, start, end = check_winner()
 
-    just_moved = current_player
-    if winner is None:
-        current_player = "O" if current_player == "X" else "X"
-    else:
-        for flat in grid:
-            for row in flat:
-                print(" ".join(map(str, row)))
-            print()
+        just_moved = current_player
+        if winner is None:
+            current_player = "O" if current_player == "X" else "X"
+        else:
+            won = True
+            for flat in grid:
+                for row in flat:
+                    print(" ".join(map(str, row)))
+                print()
 
-    return jsonify(
-        success=True,
-        player=just_moved,
-        winner=winner,
-        start={"x": start[0], "y": start[1], "z": start[2]} if start else None,
-        end={"x": end[0], "y": end[1], "z": end[2]} if end else None
-    )
+        return jsonify(
+            success=True,
+            player=just_moved,
+            winner=winner,
+            start={"x": start[0], "y": start[1], "z": start[2]} if start else None,
+            end={"x": end[0], "y": end[1], "z": end[2]} if end else None
+        )
+    return None
 
 @app.route('/reset', methods=['POST'])
 def reset_game():
-    global grid, current_player
+    global grid, current_player, won
+    won = False
     grid = [[[None for _ in range(size)] for _ in range(size)] for _ in range(size)]  # Reset grid
     current_player = "X"  # Reset starting player
     return jsonify(success=True, message="Game reset successfully")

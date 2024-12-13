@@ -20,11 +20,19 @@
       <h1>Player <span id="win">X</span> wins!</h1>
       <img src="" alt="" width="60%" id="winimg"><br><br><br><br><br>
       <a href="" class="playagain" id="pabtn">Play Again</a><br><br><br><br>
+      <button onclick="spectate()">See Board</button>
     </div>
   </div>
+  <a href="" id="re">New Game</a>
   <!-- <div class="ui_current_player">
     Current Player:</div> -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script type="module" src="/static/frontend.js"></script>
+  <script>
+    function spectate() {
+      document.getElementsByClassName("overlay")[0].style.display = "none"
+      document.getElementById("re")[0].style.display = "block"
+    }
+  </script>
 </body>
 </html>

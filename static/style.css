@@ -68,3 +68,33 @@ body {
     padding: 10px 25px;
     transition: all 0.3s ease;
 }
+
+button {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+}
+
+#re {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    margin: 20px;
+    padding: 15px 25px;
+    background: #ffcd59;
+    color:#2f54af;
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: medium;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+#re:hover {
+    color: #ffcd59;
+    background: #2f54af;
+}

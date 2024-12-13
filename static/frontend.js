@@ -282,7 +282,6 @@ function animate() {
 animate();
 
 
-
 // Communicate with backend
 async function sendMoveToBackend(x, y, z) {
   if (won == false) {
