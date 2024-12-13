@@ -285,7 +285,7 @@ animate();
 
 // Communicate with backend
 async function sendMoveToBackend(x, y, z) {
-  if (!won) {
+  if (won == false) {
     const response = await fetch('/move', {
       method: 'POST',
       headers: {
@@ -296,6 +296,7 @@ async function sendMoveToBackend(x, y, z) {
     const result = await response.json();
     if (result.success) {
       if (result.winner) {
+        won = true;
         console.log(`Player ${result.winner} wins!`);
   
   
